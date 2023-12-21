@@ -33,7 +33,6 @@ class AccessService {
         // created privateKey, publicKey
         const privateKey = crypto.randomBytes(64).toString('hex')
         const publicKey = crypto.randomBytes(64).toString('hex')
-        console.log({ privateKey, publicKey }); // save collection keyStore
 
         const keyStore = await KeyTokenService.createKeyToken({
           userId: newShop._id,
@@ -48,7 +47,6 @@ class AccessService {
         }
         // create token pair
         const tokens = await createTokenPair({ userId: newShop._id, email }, publicKey, privateKey)
-        console.log(`create token::`, tokens);
 
         return {
           code: 201,
