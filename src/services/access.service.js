@@ -24,19 +24,21 @@ class AccessService {
       }
       // step2: hash password
       const passwordHash = await bcrypt.hash(password, 10)
-      // step3: create shop
+      // step3: created shop
       const newShop = await shopModel.create({
         name, email, password: passwordHash, roles: [RoleShop.SHOP]
       })
       if (newShop) {
+        // step4: created privatekey publickey
         const privateKey = crypto.randomBytes(64).toString('hex')
         const publicKey = crypto.randomBytes(64).toString('hex')
-        const keysStore = await KeyTokensService.createKeyToken({
+        // get publicKey from dataBase
+        const keyStore = await KeyTokensService.createKeyToken({
           userId: newShop._id,
           publicKey,
           privateKey
         })
-        if (!keysStore) {
+        if (!keyStore) {
           return {
             code: 'xxx',
             message: 'PublicKeyString Error'

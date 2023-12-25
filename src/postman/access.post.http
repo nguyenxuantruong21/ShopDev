@@ -3,10 +3,12 @@
 
 POST {{url_dev}}shop/signup
 Content-Type: application/json
+x-api-key:1e35eb5ebb4ad16cd9bfdb067fefe407fa679b2f45d702f8ee496b01446b85a04a8d4c59fdf84b2f640c9e56308ed4854867d2a770e3f787534bf29a0d579110
+
 
 {
   "name": "Shop Tips",
-  "email": "shoplvh@gmail.com",
+  "email": "shopdev123@gmail.com",
   "password": "abc123"
 }
 
