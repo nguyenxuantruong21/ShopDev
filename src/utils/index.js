@@ -1,9 +1,8 @@
 const _ = require('lodash')
 
-const getInfoData = ({ fields = [], object = {} }) => {
-  return _.pick(object, fields)
+const getInfoData = ({ fileds = [], object = {} }) => {
+  return _.pick(object, fileds)
 }
-
 
 module.exports = {
   getInfoData

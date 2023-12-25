@@ -1,14 +1,9 @@
-const { privateEncrypt } = require("crypto")
-const keyTokenModel = require("../models/keyToken.model")
+const keytokenModel = require("../models/keytoken.model")
 
-class KeyTokenService {
+class KeyTokensService {
   static createKeyToken = async ({ userId, publicKey, privateKey }) => {
     try {
-      const tokens = await keyTokenModel.create({
-        user: userId,
-        publicKey,
-        privateKey
-      })
+      const tokens = await keytokenModel.create({ user: userId, publicKey: publicKey, privateKey })
       return tokens ? tokens.publicKey : null
     } catch (error) {
       return error
@@ -16,5 +11,4 @@ class KeyTokenService {
   }
 }
 
-
-module.exports = KeyTokenService
+module.exports = KeyTokensService

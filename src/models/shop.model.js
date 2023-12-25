@@ -1,9 +1,8 @@
-const { model, Schema, Types } = require('mongoose')
+const { Schema, model } = require('mongoose')
 const DOCUMENT_NAME = 'Shop'
 const COLLECTION_NAME = 'Shops'
 
-// Declare the Schema of the Mongo model
-var shopSchema = Schema({
+const shopSchema = new Schema({
   name: {
     type: String,
     trim: true,
@@ -11,12 +10,12 @@ var shopSchema = Schema({
   },
   email: {
     type: String,
-    trim: true,
-    unique: true
+    unique: true,
+    trim: true
   },
   password: {
     type: String,
-    require: true
+    required: true
   },
   status: {
     type: String,
@@ -34,7 +33,6 @@ var shopSchema = Schema({
 }, {
   timestamps: true,
   collection: COLLECTION_NAME
-});
+})
 
-//Export the model
 module.exports = model(DOCUMENT_NAME, shopSchema)

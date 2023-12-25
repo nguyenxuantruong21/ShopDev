@@ -1,10 +1,9 @@
 const shopModel = require("../models/shop.model")
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
-const KeyTokenService = require("./keyToken.service")
+const KeyTokensService = require("./keyToken.service")
 const { createTokenPair } = require("../auth/authUtils")
-const { getInfoData } = require("../utils")
-const { BadRequestError, ConflictRequestError } = require("../core/error.response")
+const { getInfoData } = require('../utils/index')
 
 const RoleShop = {
   SHOP: 'SHOP',
@@ -12,51 +11,59 @@ const RoleShop = {
   EDITOR: 'EDITOR',
   ADMIN: 'ADMIN'
 }
-
 class AccessService {
-
   static signUp = async ({ name, email, password }) => {
-
-    // step 1 check email exist??
-    const hodelShop = await shopModel.findOne({ email }).lean()
-    if (hodelShop) {
-      throw new BadRequestError('Error:: Shop already register !')
-    }
-    const passwordHash = await bcrypt.hash(password, 10)
-    const newShop = await shopModel.create({
-      name, email, passwordHash, roles: [RoleShop.SHOP]
-    })
-
-    if (newShop) {
-      // created privateKey, publicKey
-      const privateKey = crypto.randomBytes(64).toString('hex')
-      const publicKey = crypto.randomBytes(64).toString('hex')
-
-      const keyStore = await KeyTokenService.createKeyToken({
-        userId: newShop._id,
-        publicKey,
-        privateKey
-      })
-      if (!keyStore) {
+    try {
+      // step1: check email exists
+      const hodelShop = await shopModel.findOne({ email }).lean()
+      if (hodelShop) {
         return {
-          code: 'xxxx',
-          message: 'KeyStore Error'
+          code: 'xxx',
+          message: 'Shop Already register'
         }
       }
-      // create token pair
-      const tokens = await createTokenPair({ userId: newShop._id, email }, publicKey, privateKey)
-
-      return {
-        code: 201,
-        metadata: {
-          shop: getInfoData({ fields: ['_id', 'name', 'email'], object: newShop }),
-          tokens
+      // step2: hash password
+      const passwordHash = await bcrypt.hash(password, 10)
+      // step3: create shop
+      const newShop = await shopModel.create({
+        name, email, password: passwordHash, roles: [RoleShop.SHOP]
+      })
+      if (newShop) {
+        const privateKey = crypto.randomBytes(64).toString('hex')
+        const publicKey = crypto.randomBytes(64).toString('hex')
+        const keysStore = await KeyTokensService.createKeyToken({
+          userId: newShop._id,
+          publicKey,
+          privateKey
+        })
+        if (!keysStore) {
+          return {
+            code: 'xxx',
+            message: 'PublicKeyString Error'
+          }
         }
+        // created token pair
+        const tokens = await createTokenPair({ userId: newShop, email }, publicKey, privateKey)
+        return {
+          code: 201,
+          metadata: {
+            shop: getInfoData({ object: newShop, fileds: ['_id', 'name', 'email'] }),
+            tokens
+          }
+        }
+      }
+      return {
+        code: 200,
+        metadata: null
+      }
+    } catch (error) {
+      return {
+        code: 'xxx',
+        message: error.message,
+        status: 'error'
       }
     }
   }
 }
 
-
 module.exports = AccessService
-
