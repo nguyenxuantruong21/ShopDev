@@ -22,5 +22,19 @@ const { checkOverLoad } = require('./helpers/check.connect')
 app.use('/', require('./routers/index'))
 
 // handle error
+app.use((req, res, next) => {
+  const error = new Error('Not Found')
+  error.status = 404
+  next(error)
+})
+
+app.use((error, req, res, next) => {
+  const statusCode = error.status
+  return res.status(statusCode).json({
+    status: 'error',
+    code: statusCode,
+    message: error.message
+  })
+})
 
 module.exports = app
