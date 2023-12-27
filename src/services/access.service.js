@@ -15,6 +15,15 @@ const RoleShop = {
 }
 class AccessService {
 
+  static handlerRefreshToken = async (refreshToken) => {
+
+  }
+
+  static logOut = async (keyStore) => {
+    const delKey = await KeyTokensService.removeKeyById(keyStore._id)
+    return delKey
+  }
+
   static logIn = async ({ email, password, refreshToken = null }) => {
     const foundShop = await findByEmail({ email })
     if (!foundShop) {
