@@ -4,7 +4,8 @@ const crypto = require('crypto')
 const KeyTokensService = require("./keyToken.service")
 const { createTokenPair } = require("../auth/authUtils")
 const { getInfoData } = require('../utils/index')
-const { BadRequestError } = require('../core/error.response')
+const { BadRequestError, AuthFailuredError } = require('../core/error.response')
+const { findByEmail } = require('./shop.service')
 
 const RoleShop = {
   SHOP: 'SHOP',
@@ -13,6 +14,32 @@ const RoleShop = {
   ADMIN: 'ADMIN'
 }
 class AccessService {
+
+  static logIn = async ({ email, password, refreshToken = null }) => {
+    const foundShop = await findByEmail({ email })
+    if (!foundShop) {
+      throw new BadRequestError('Shop is not register')
+    }
+    const match = bcrypt.compare(password, foundShop.password)
+    if (!match) {
+      throw new AuthFailuredError('Authorization Error')
+    }
+    const privateKey = crypto.randomBytes(64).toString('hex')
+    const publicKey = crypto.randomBytes(64).toString('hex')
+
+    const tokens = await createTokenPair({ userId: foundShop._id, email }, publicKey, privateKey)
+    await KeyTokensService.createKeyToken({
+      userId: foundShop._id,
+      publicKey,
+      privateKey,
+      refreshToken: tokens.refreshToken
+    })
+    return {
+      shop: getInfoData({ object: foundShop, fileds: ['_id', 'name', 'email'] }),
+      tokens
+    }
+  }
+
   static signUp = async ({ name, email, password }) => {
     // step1: check email exists
     const hodelShop = await shopModel.findOne({ email }).lean()
@@ -29,11 +56,11 @@ class AccessService {
       // step4: created privatekey, publickey
       const privateKey = crypto.randomBytes(64).toString('hex')
       const publicKey = crypto.randomBytes(64).toString('hex')
-      // get keystore from dataBase => publickey
+      // step5: get keystore from dataBase => publickey
       const keyStore = await KeyTokensService.createKeyToken({
         userId: newShop._id,
         publicKey,
-        privateKey
+        privateKey,
       })
       if (!keyStore) {
         return {
@@ -42,7 +69,7 @@ class AccessService {
         }
       }
       // created token pair about accesstoken and refreshtoken
-      const tokens = await createTokenPair({ userId: newShop, email }, publicKey, privateKey)
+      const tokens = await createTokenPair({ userId: newShop._id, email }, publicKey, privateKey)
       return {
         code: 201,
         metadata: {
