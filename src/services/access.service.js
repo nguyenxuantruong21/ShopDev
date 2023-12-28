@@ -2,9 +2,9 @@ const shopModel = require("../models/shop.model")
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const KeyTokensService = require("./keyToken.service")
-const { createTokenPair } = require("../auth/authUtils")
+const { createTokenPair, verifyJWT } = require("../auth/authUtils")
 const { getInfoData } = require('../utils/index')
-const { BadRequestError, AuthFailuredError } = require('../core/error.response')
+const { BadRequestError, AuthFailuredError, ForbiddenError } = require('../core/error.response')
 const { findByEmail } = require('./shop.service')
 
 const RoleShop = {
@@ -14,9 +14,42 @@ const RoleShop = {
   ADMIN: 'ADMIN'
 }
 class AccessService {
-
+  /**
+   *check this refreshToken
+   */
   static handlerRefreshToken = async (refreshToken) => {
-
+    // check xem token nay da duoc su dung chua
+    const foundRefreshToken = await KeyTokensService.findByRefreshTokenUsed(refreshToken)
+    if (foundRefreshToken) {
+      // decode refreshToken xem la thang nao
+      const { userId, email } = await verifyJWT(refreshToken, foundRefreshToken.privateKey)
+      // neu co thi xoa tat ca token trong keyStore
+      await KeyTokensService.deleteKeyById(userId)
+      throw new ForbiddenError('Some thing wrong happen. Please relogin')
+    }
+    // No
+    const holderToken = await KeyTokensService.findByRefreshToken(refreshToken)
+    if (!holderToken) throw new AuthFailuredError('Shop not registerd')
+    // verify token
+    const { userId, email } = await verifyJWT(refreshToken, holderToken.privateKey)
+    // check userId
+    const foundShop = await findByEmail({ email })
+    if (!foundShop) throw new AuthFailuredError('Shop not registerd')
+    // created 1 cap token moi
+    const tokens = await createTokenPair({ userId: foundShop._id, email }, holderToken.publicKey, holderToken.privateKey)
+    // update token
+    await holderToken.updateOne({
+      $set: {
+        refreshToken: tokens.refreshToken
+      },
+      $addToSet: {
+        refreshsTokenUsed: refreshToken
+      }
+    })
+    return {
+      userId: { userId, email },
+      tokens
+    }
   }
 
   static logOut = async (keyStore) => {

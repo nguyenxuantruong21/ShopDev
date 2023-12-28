@@ -43,7 +43,6 @@ const authorization = asyncHandler(async (req, res, next) => {
   if (!keyStore) throw new NotFoundError('Not Found')
   // 3-get accestoken
   const accessToken = req.headers[HEADER.AUTHORIZATION]
-  console.log('hienthira,', req.headers);
   if (!accessToken) throw new AuthFailuredError('Invalid Request')
   //4-decode
   try {
@@ -56,7 +55,14 @@ const authorization = asyncHandler(async (req, res, next) => {
   }
 })
 
+
+
+const verifyJWT = async (token, keySecret) => {
+  return await JWT.verify(token, keySecret)
+}
+
 module.exports = {
   createTokenPair,
-  authorization
+  authorization,
+  verifyJWT
 }
