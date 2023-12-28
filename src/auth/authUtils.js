@@ -35,6 +35,7 @@ const createTokenPair = async (payload, publicKey, privateKey) => {
   }
 }
 
+//v1
 const authorization = asyncHandler(async (req, res, next) => {
   // 1 - check userId misssing
   const userId = req.headers[HEADER.CLIENT_ID]
@@ -57,6 +58,7 @@ const authorization = asyncHandler(async (req, res, next) => {
 })
 
 
+//v2
 const authorizationv2 = asyncHandler(async (req, res, next) => {
   // 1 - check userId misssing
   const userId = req.headers[HEADER.CLIENT_ID]
@@ -64,7 +66,7 @@ const authorizationv2 = asyncHandler(async (req, res, next) => {
   // 2-get key store
   const keyStore = await findByUserId(userId)
   if (!keyStore) throw new NotFoundError('Not Found')
-  // 3-get accestoken
+  // 3-get refreshtoken
   if (req.headers[HEADER.REFRESHTOKEN]) {
     try {
       const refreshToken = req.headers[HEADER.REFRESHTOKEN]
@@ -77,6 +79,17 @@ const authorizationv2 = asyncHandler(async (req, res, next) => {
     } catch (error) {
       throw error
     }
+  }
+  const accessToken = req.headers[HEADER.AUTHORIZATION]
+  if (!accessToken) throw new AuthFailuredError('Invalid Request')
+  //4-decode
+  try {
+    const decode = JWT.verify(accessToken, keyStore.publicKey)
+    if (userId !== decode.userId) throw new AuthFailuredError('Invalid user')
+    req.keyStore = keyStore
+    return next()
+  } catch (error) {
+    throw error
   }
 })
 

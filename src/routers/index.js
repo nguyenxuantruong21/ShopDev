@@ -8,6 +8,7 @@ router.use(apiKey)
 router.use(permission('0000'))
 // auth api
 router.use('/v1/api', require('./access/index'))
+router.use('/v1/api', require('./product/index'))
 
 
 module.exports = router

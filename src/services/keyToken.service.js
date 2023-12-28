@@ -14,7 +14,7 @@ class KeyTokensService {
     }
   }
 
-  // find key in key store with userid
+  // find key in keystore with userid
   static findByUserId = async (userId) => {
     return keytokenModel.findOne({ user: new ObjectId(userId) }).lean()
   }
