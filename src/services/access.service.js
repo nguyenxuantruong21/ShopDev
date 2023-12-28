@@ -6,6 +6,8 @@ const { createTokenPair, verifyJWT } = require("../auth/authUtils")
 const { getInfoData } = require('../utils/index')
 const { BadRequestError, AuthFailuredError, ForbiddenError } = require('../core/error.response')
 const { findByEmail } = require('./shop.service')
+const { Types: { ObjectId } } = require('mongoose')
+const keytokenModel = require("../models/keytoken.model")
 
 const RoleShop = {
   SHOP: 'SHOP',
@@ -15,30 +17,57 @@ const RoleShop = {
 }
 class AccessService {
   /**
-   *check this refreshToken
+   *check this refreshToken v1
    */
-  static handlerRefreshToken = async (refreshToken) => {
-    // check xem token nay da duoc su dung chua
-    const foundRefreshToken = await KeyTokensService.findByRefreshTokenUsed(refreshToken)
-    if (foundRefreshToken) {
-      // decode refreshToken xem la thang nao
-      const { userId, email } = await verifyJWT(refreshToken, foundRefreshToken.privateKey)
-      // neu co thi xoa tat ca token trong keyStore
+  // static handlerRefreshToken = async (refreshToken) => {
+  //   // check xem token nay da duoc su dung chua trong refreshTokenUsed
+  //   const foundRefreshToken = await KeyTokensService.findByRefreshTokenUsed(refreshToken)
+  //   if (foundRefreshToken) {
+  //     // decode refreshToken xem la thang nao
+  //     const { userId, email } = await verifyJWT(refreshToken, foundRefreshToken.privateKey)
+  //     // neu co thi xoa tat ca token trong keyStore
+  //     await KeyTokensService.deleteKeyById(userId)
+  //     throw new ForbiddenError('Some thing wrong happen. Please relogin')
+  //   }
+  //   // No => tim trong refreshToken
+  //   const holderToken = await KeyTokensService.findByRefreshToken(refreshToken)
+  //   if (!holderToken) throw new AuthFailuredError('Shop not registerd')
+  //   // verify token
+  //   const { userId, email } = await verifyJWT(refreshToken, holderToken.privateKey)
+  //   // check userId ton tai nua hay ko
+  //   const foundShop = await findByEmail({ email })
+  //   if (!foundShop) throw new AuthFailuredError('Shop not registerd')
+  //   // created 1 cap token moi
+  //   const tokens = await createTokenPair({ userId: foundShop._id, email }, holderToken.publicKey, holderToken.privateKey)
+  //   // update refreshToken moi va set lai refreshToken cu vao refreshsTokenUsed
+  //   await holderToken.updateOne({
+  //     $set: {
+  //       refreshToken: tokens.refreshToken
+  //     },
+  //     $addToSet: {
+  //       refreshsTokenUsed: refreshToken
+  //     }
+  //   })
+  //   return {
+  //     userId: { userId, email },
+  //     tokens
+  //   }
+  // }
+
+  // V2
+  static handlerRefreshTokenV2 = async ({ keyStore, user, refreshToken }) => {
+    const { userId, email } = user
+    if (keyStore.refreshsTokenUsed.includes(refreshToken)) {
       await KeyTokensService.deleteKeyById(userId)
       throw new ForbiddenError('Some thing wrong happen. Please relogin')
     }
-    // No
-    const holderToken = await KeyTokensService.findByRefreshToken(refreshToken)
-    if (!holderToken) throw new AuthFailuredError('Shop not registerd')
-    // verify token
-    const { userId, email } = await verifyJWT(refreshToken, holderToken.privateKey)
-    // check userId
+    if (keyStore.refreshToken !== refreshToken) throw new AuthFailuredError('Shop not registerd')
     const foundShop = await findByEmail({ email })
     if (!foundShop) throw new AuthFailuredError('Shop not registerd')
     // created 1 cap token moi
-    const tokens = await createTokenPair({ userId: foundShop._id, email }, holderToken.publicKey, holderToken.privateKey)
-    // update token
-    await holderToken.updateOne({
+    const tokens = await createTokenPair({ userId, email }, keyStore.publicKey, keyStore.privateKey)
+    // update refreshToken moi va set lai refreshToken cu vao refreshsTokenUsed
+    await keytokenModel.updateOne({ user: new ObjectId(userId) }, {
       $set: {
         refreshToken: tokens.refreshToken
       },
@@ -46,8 +75,9 @@ class AccessService {
         refreshsTokenUsed: refreshToken
       }
     })
+
     return {
-      userId: { userId, email },
+      user,
       tokens
     }
   }

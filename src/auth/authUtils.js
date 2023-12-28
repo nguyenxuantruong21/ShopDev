@@ -6,7 +6,8 @@ const { findByUserId } = require('../services/keyToken.service')
 const HEADER = {
   API_KEY: 'x-api-key',
   CLIENT_ID: 'x-client-id',
-  AUTHORIZATION: 'athorization'
+  AUTHORIZATION: 'athorization',
+  REFRESHTOKEN: 'x-rtoken-id'
 }
 
 const createTokenPair = async (payload, publicKey, privateKey) => {
@@ -56,6 +57,30 @@ const authorization = asyncHandler(async (req, res, next) => {
 })
 
 
+const authorizationv2 = asyncHandler(async (req, res, next) => {
+  // 1 - check userId misssing
+  const userId = req.headers[HEADER.CLIENT_ID]
+  if (!userId) throw new AuthFailuredError('Invalid Request')
+  // 2-get key store
+  const keyStore = await findByUserId(userId)
+  if (!keyStore) throw new NotFoundError('Not Found')
+  // 3-get accestoken
+  if (req.headers[HEADER.REFRESHTOKEN]) {
+    try {
+      const refreshToken = req.headers[HEADER.REFRESHTOKEN]
+      const decode = JWT.verify(refreshToken, keyStore.privateKey)
+      if (userId !== decode.userId) throw new AuthFailuredError('Invalid user')
+      req.keyStore = keyStore
+      req.user = decode
+      req.refreshToken = refreshToken
+      return next()
+    } catch (error) {
+      throw error
+    }
+  }
+})
+
+
 
 const verifyJWT = async (token, keySecret) => {
   return await JWT.verify(token, keySecret)
@@ -64,5 +89,6 @@ const verifyJWT = async (token, keySecret) => {
 module.exports = {
   createTokenPair,
   authorization,
+  authorizationv2,
   verifyJWT
 }
