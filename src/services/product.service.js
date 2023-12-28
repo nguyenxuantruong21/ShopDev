@@ -40,6 +40,7 @@ class Clothing extends Product {
     if (!newClothing) throw BadRequestError('Create new clothing error')
     const newProduct = await super.createProduct()
     if (!newProduct) throw BadRequestError('Create new product error')
+    return newProduct
   }
 }
 
@@ -50,7 +51,7 @@ class Electronics extends Product {
     if (!newElectronic) throw BadRequestError('Create new electronic error')
     const newProduct = await super.createProduct()
     if (!newProduct) throw BadRequestError('Create new product error')
-    s
+    return newProduct
   }
 }
 
