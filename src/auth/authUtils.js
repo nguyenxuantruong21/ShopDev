@@ -80,6 +80,7 @@ const authorizationv2 = asyncHandler(async (req, res, next) => {
       throw error
     }
   }
+  // get accessToken after refreshToken
   const accessToken = req.headers[HEADER.AUTHORIZATION]
   if (!accessToken) throw new AuthFailuredError('Invalid Request')
   //4-decode
@@ -87,6 +88,7 @@ const authorizationv2 = asyncHandler(async (req, res, next) => {
     const decode = JWT.verify(accessToken, keyStore.publicKey)
     if (userId !== decode.userId) throw new AuthFailuredError('Invalid user')
     req.keyStore = keyStore
+    req.user = decode
     return next()
   } catch (error) {
     throw error

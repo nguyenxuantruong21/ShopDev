@@ -1,27 +1,31 @@
 const { clothing, electronic, product, furniture } = require('../models/product.model')
 const { BadRequestError } = require('../core/error.response')
+const { findAllDraftsForShop } = require('../models/repositories/product.repo')
+const { Types: { ObjectId } } = require('mongoose')
 
 
 // define to call sub-class
 class ProductFactory {
-  // static async createProduct(type, payload) {
-  //   switch (type) {
-  //     case 'Clothing':
-  //       return new Clothing(payload).createProduct()
-  //     case 'Electronics':
-  //       return new Electronics(payload).createProduct()
-  //     default:
-  //       throw new BadRequestError(`Invalide Product Type ${type}`)
-  //   }
-  // }
+  /**
+   * step 1: create productRegistry to save {"type":"classRef"}
+   */
   static productRegistry = {}
   static registerProductType(type, classRef) {
-    ProductFactory.productRegistry[type] = classRef
+    this.productRegistry[type] = classRef
   }
+  // step 2: get class and created product
   static async createProduct(type, payload) {
     const productClass = this.productRegistry[type]
     if (!productClass) throw new BadRequestError(`Invalide Product Type ${type}`)
     return new productClass(payload).createProduct()
+  }
+
+  /**
+   * QUERY => PRODUCT
+   */
+  static findAllDraftsForShop = async ({ product_shop, limit = 50, skip = 0 }) => {
+    const query = { product_shop, isDraft: true }
+    return await findAllDraftsForShop({ query, limit, skip })
   }
 }
 
@@ -102,7 +106,6 @@ class Furniture extends Product {
 ProductFactory.registerProductType('Electronics', Electronics)
 ProductFactory.registerProductType('Clothing', Clothing)
 ProductFactory.registerProductType('Furniture', Furniture)
-
 
 
 module.exports = ProductFactory

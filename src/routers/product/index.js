@@ -5,9 +5,14 @@ const productController = require('../../controllers/product.controller')
 
 const router = express.Router()
 
+// authentication
+router.use(authorizationv2)
+
 // create product
 router.post('/product', asyncHandler(productController.createProduct))
-// handle refreshToken
+
+// get all list draft
+router.get('/product/drafts/all', asyncHandler(productController.getAllDraftForShop))
 
 
 module.exports = router
