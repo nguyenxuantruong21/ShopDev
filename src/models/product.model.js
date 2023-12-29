@@ -30,6 +30,10 @@ const productShema = new Schema({
   collection: COLLECTION_NAME
 })
 
+
+// create index for search
+productShema.index({ product_description: 'text', product_name: 'text' })
+
 // overide product.slug use librari
 productShema.pre('save', function (next) {
   this.product_slug = slugify(this.product_name, { lower: true })

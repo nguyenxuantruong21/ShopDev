@@ -1,7 +1,6 @@
 const { clothing, electronic, product, furniture } = require('../models/product.model')
 const { BadRequestError } = require('../core/error.response')
-const { findAllDraftsForShop } = require('../models/repositories/product.repo')
-const { Types: { ObjectId } } = require('mongoose')
+const { findAllDraftsForShop, publicProductByShop, findAllPublishForShop, unPublicProductByShop, searchProduct, } = require('../models/repositories/product.repo')
 
 
 // define to call sub-class
@@ -20,13 +19,33 @@ class ProductFactory {
     return new productClass(payload).createProduct()
   }
 
+  // PUT
+  static publicProductByShop = async ({ product_shop, product_id }) => {
+    return await publicProductByShop({ product_shop, product_id })
+  }
+  static unPublicProductByShop = async ({ product_shop, product_id }) => {
+    return await unPublicProductByShop({ product_shop, product_id })
+  }
+
+
   /**
-   * QUERY => PRODUCT
+    QUERY => PRODUCT
    */
   static findAllDraftsForShop = async ({ product_shop, limit = 50, skip = 0 }) => {
     const query = { product_shop, isDraft: true }
     return await findAllDraftsForShop({ query, limit, skip })
   }
+
+  static findAllPublishForShop = async ({ product_shop, limit = 50, skip = 0 }) => {
+    const query = { product_shop, isPublished: true }
+    return await findAllPublishForShop({ query, limit, skip })
+  }
+
+  // search product
+  static searchProduct = async ({ keySearch }) => {
+    return await searchProduct({ keySearch })
+  }
+
 }
 
 // class parent define product
