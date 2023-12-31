@@ -1,5 +1,7 @@
 const { clothing, electronic, furniture, product } = require('../../models/product.model')
 const { Types: { ObjectId } } = require('mongoose')
+const { getSelectData, unSelectData } = require('../../utils/index')
+
 
 // create query product basic
 const queryProduct = async ({ query, limit, skip }) => {
@@ -54,11 +56,28 @@ const unPublicProductByShop = async ({ product_shop, product_id }) => {
   return modifiedCount
 }
 
+const findAllProducts = async ({ limit, sort, page, filter, select }) => {
+  const skip = (page - 1) * limit
+  const sortBy = sort === 'ctime' ? { _id: -1 } : { _id: 1 }
+  const products = await product.find(filter)
+    .sort(sortBy)
+    .skip(skip)
+    .limit(limit)
+    .select(getSelectData(select))
+    .lean()
+  return products
+}
+
+const findFroductDetail = async ({ product_id, unSelect }) => {
+  return await product.findById(product_id).select(unSelectData(unSelect))
+}
 
 module.exports = {
   findAllDraftsForShop,
   findAllPublishForShop,
   publicProductByShop,
   unPublicProductByShop,
-  searchProduct
+  searchProduct,
+  findAllProducts,
+  findFroductDetail
 }

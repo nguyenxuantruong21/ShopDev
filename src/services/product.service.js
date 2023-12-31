@@ -1,18 +1,17 @@
 const { clothing, electronic, product, furniture } = require('../models/product.model')
 const { BadRequestError } = require('../core/error.response')
-const { findAllDraftsForShop, publicProductByShop, findAllPublishForShop, unPublicProductByShop, searchProduct, } = require('../models/repositories/product.repo')
-
+const { findAllDraftsForShop, publicProductByShop, findAllPublishForShop, unPublicProductByShop, searchProduct, findAllProducts, findFroductDetail, } = require('../models/repositories/product.repo')
 
 // define to call sub-class
 class ProductFactory {
   /**
    * step 1: create productRegistry to save {"type":"classRef"}
+   * step 2: get class and created product
    */
   static productRegistry = {}
   static registerProductType(type, classRef) {
     this.productRegistry[type] = classRef
   }
-  // step 2: get class and created product
   static async createProduct(type, payload) {
     const productClass = this.productRegistry[type]
     if (!productClass) throw new BadRequestError(`Invalide Product Type ${type}`)
@@ -23,11 +22,13 @@ class ProductFactory {
   static publicProductByShop = async ({ product_shop, product_id }) => {
     return await publicProductByShop({ product_shop, product_id })
   }
+
   static unPublicProductByShop = async ({ product_shop, product_id }) => {
     return await unPublicProductByShop({ product_shop, product_id })
   }
 
-
+  static updateProduct = async ({ product_shop, product_id }) => {
+  }
   /**
     QUERY => PRODUCT
    */
@@ -46,6 +47,14 @@ class ProductFactory {
     return await searchProduct({ keySearch })
   }
 
+  // find Product
+  static findAllProducts = async ({ limit = 50, sort = 'ctime', page = 1, filter = { isPublished: true } }) => {
+    return await findAllProducts({ limit, sort, filter, page, select: ['product_name', 'product_price', 'product_thumb'] })
+  }
+
+  static findProductsDetail = async ({ product_id }) => {
+    return await findFroductDetail({ product_id, unSelect: ['__v'] })
+  }
 }
 
 // class parent define product
