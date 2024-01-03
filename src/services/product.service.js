@@ -2,6 +2,7 @@ const { clothing, electronic, product, furniture } = require('../models/product.
 const { BadRequestError } = require('../core/error.response')
 const { findAllDraftsForShop, publicProductByShop, findAllPublishForShop, unPublicProductByShop, searchProduct, findAllProducts, findProductDetail, updateProductById, } = require('../models/repositories/product.repo')
 const { removeUndefineObject, updateNestedObjectParser } = require('../utils')
+const { insertInventory } = require('../models/repositories/inventory.repo')
 
 // define to call sub-class
 class ProductFactory {
@@ -78,7 +79,16 @@ class Product {
   }
   // product_id is id of product detail
   async createProduct(product_id) {
-    return await product.create({ ...this, _id: product_id })
+    const newProduct = await product.create({ ...this, _id: product_id })
+    if (newProduct) {
+      // add product_stock in inventory collection
+      await insertInventory({
+        productId: newProduct._id,
+        shopId: this.product_shop,
+        stock: this.product_quantity
+      })
+    }
+    return newProduct
   }
 
   // update product
@@ -204,3 +214,5 @@ ProductFactory.registerProductType('Furniture', Furniture)
 
 
 module.exports = ProductFactory
+
+
