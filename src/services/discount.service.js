@@ -15,7 +15,7 @@ const { convertToObjectId } = require("../utils")
  */
 
 class DiscountService {
-  // create discount code
+  // create discount code [admin,shop]
   static async createDiscountCode(payload) {
     const {
       code, start_date, end_date, is_active, shopId, min_order_value, product_ids, applies_to, name,
@@ -59,9 +59,9 @@ class DiscountService {
   }
 
   /**
+   * [user]
    * get all discount codes availabel with product all and specific
    */
-
   static async getAllDiscountCodesWithProduct({
     code, shopId, limit, page
   }) {
@@ -107,7 +107,7 @@ class DiscountService {
   }
 
   /**
-   * get all dicount codes  of shop
+   * get all dicount codes  of shop [shop,admin]
    */
   static getAllDiscountCodesByShop = async ({
     limit, page, shopId
@@ -125,7 +125,9 @@ class DiscountService {
     return discounts
   }
 
+
   /**
+   * [user]
    * Apply discount code
    * product = [
    *  {
@@ -163,7 +165,6 @@ class DiscountService {
       discount_value
     } = foundDiscount
 
-    console.log('discount=============', discount_is_active);
     if (!discount_is_active) throw new NotFoundError('Discount expried')
     // so luong discount duoc su dung
     if (!discount_max_uses) throw new NotFoundError('Discount are out')
@@ -200,17 +201,17 @@ class DiscountService {
     }
   }
 
-  // delete discount code
-  static async deleteDiscountCode({ shopId, codeId }) {
-    const deleted = await discountModel.findOneAndDelete({
-      discount_code: codeId,
+  // delete discount code [admin, shop]
+  static async deleteDiscountCode({ shopId, code }) {
+    const deleted = discountModel.findOneAndDelete({
+      discount_code: code,
       discount_shopId: convertToObjectId(shopId)
     })
     return deleted
   }
 
 
-  // cancel discount code
+  // cancel discount code [user]
   static async cancelDiscountCode({ codeId, shopId, userId }) {
     const foundDiscount = await checkDiscountExist({
       model: discountModel,

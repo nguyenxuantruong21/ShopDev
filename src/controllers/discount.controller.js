@@ -41,6 +41,26 @@ class DiscountController {
     }).send(res)
   }
 
+  deleteDiscountCode = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Delete Discount Successfully',
+      metadata: await DiscountService.deleteDiscountCode({
+        ...req.params,
+        shopId: req.user.userId
+      })
+    }).send(res)
+  }
+
+
+  cancelDiscountCode = async (req, res, next) => {
+    new SuccessResponse({
+      message: 'Cancel Discount Successfully',
+      metadata: await DiscountService.cancelDiscountCode({
+        ...req.params,
+        shopId: req.user.userId
+      })
+    }).send(res)
+  }
 }
 
 

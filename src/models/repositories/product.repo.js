@@ -1,6 +1,6 @@
 const { clothing, electronic, furniture, product } = require('../../models/product.model')
 const { Types: { ObjectId } } = require('mongoose')
-const { getSelectData, unSelectData } = require('../../utils/index')
+const { getSelectData, unSelectData, convertToObjectId } = require('../../utils/index')
 
 
 // create query product basic
@@ -83,6 +83,12 @@ const updateProductById = async ({
   })
 }
 
+const getProductIdById = async (productId) => {
+  return await product.findOne({
+    _id: convertToObjectId(productId)
+  })
+}
+
 module.exports = {
   findAllDraftsForShop,
   findAllPublishForShop,
@@ -91,5 +97,6 @@ module.exports = {
   searchProduct,
   findAllProducts,
   findProductDetail,
-  updateProductById
+  updateProductById,
+  getProductIdById
 }
