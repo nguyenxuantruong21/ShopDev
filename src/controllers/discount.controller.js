@@ -3,7 +3,7 @@ const DiscountService = require("../services/discount.service");
 
 
 class DiscountController {
-  createDiscountCode = async (req, res, next) => {
+  createDiscountCodes = async (req, res, next) => {
     new SuccessResponse({
       message: 'Successfull Code Generations',
       metadata: await DiscountService.createDiscountCode({
@@ -13,7 +13,7 @@ class DiscountController {
     }).send(res)
   }
 
-  getAllDiscountCode = async (req, res, next) => {
+  getAllDiscountCodes = async (req, res, next) => {
     new SuccessResponse({
       message: 'Successfull Code Found',
       metadata: await DiscountService.getAllDiscountCodesByShop({
@@ -23,12 +23,11 @@ class DiscountController {
     }).send(res)
   }
 
-  getDiscountAmout = async (req, res, next) => {
+  getDiscountAmount = async (req, res, next) => {
     new SuccessResponse({
       message: 'Successfull Code Found',
       metadata: await DiscountService.getDiscountAmount({
         ...req.body,
-        shopId: req.user.userId
       })
     }).send(res)
   }
@@ -41,6 +40,7 @@ class DiscountController {
       })
     }).send(res)
   }
+
 }
 
 

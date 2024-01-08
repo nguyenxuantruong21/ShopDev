@@ -1,12 +1,21 @@
 const { BadRequestError, NotFoundError } = require("../core/error.response")
 const discountModel = require("../models/discount.model")
-const { product } = require("../models/product.model")
-const { findAllDiscountCodesUnSelect, checkDiscountExist, findAllDiscountCodesSelect } = require("../models/repositories/discount.repo")
+// const { product } = require("../models/product.model")
+const { checkDiscountExist, findAllDiscountCodesSelect, findAllDiscountCodesUnSelect } = require("../models/repositories/discount.repo")
 const { findAllProducts } = require("../models/repositories/product.repo")
 const { convertToObjectId } = require("../utils")
 
+/**
+ * 1 - generator discount code [shop/admin]
+ * 2 - get discount amouse [user]
+ * 3 - get all discount codes [user/shop]
+ * 4 - verify discount code [user]
+ * 5 - delete discount code [shop/admin]
+ * 6 - cancel discount code [user]
+ */
 
 class DiscountService {
+  // create discount code
   static async createDiscountCode(payload) {
     const {
       code, start_date, end_date, is_active, shopId, min_order_value, product_ids, applies_to, name,
@@ -31,8 +40,8 @@ class DiscountService {
       discount_name: name,
       discount_description: discription,
       discount_type: type,
-      discount_value: value,
       discount_code: code,
+      discount_value: value,
       discount_min_order_value: min_order_value || 0,
       discount_max_value: max_value,
       discount_start_date: new Date(start_date),
@@ -50,18 +59,11 @@ class DiscountService {
   }
 
   /**
-   * update discount code
-   */
-  static async updateDiscountCode() {
-    //..
-  }
-
-  /**
-   * get all discount codes availabel with product
+   * get all discount codes availabel with product all and specific
    */
 
   static async getAllDiscountCodesWithProduct({
-    code, shopId, userId, limit, page
+    code, shopId, limit, page
   }) {
     // create index for discount code
     const foundDiscount = await discountModel.findOne({
@@ -73,7 +75,6 @@ class DiscountService {
     if (!foundDiscount) {
       throw new NotFoundError('Discount not exist')
     }
-
     const { discount_applies_to, discount_product_ids } = foundDiscount
     let products
     if (discount_applies_to === 'all') {
@@ -90,7 +91,7 @@ class DiscountService {
       })
     }
     if (discount_applies_to === 'specific') {
-      // get all product
+      // get product id in product [id]
       products = await findAllProducts({
         filter: {
           _id: { $in: discount_product_ids },
@@ -101,8 +102,6 @@ class DiscountService {
         sort: 'ctime',
         select: ['product_name']
       })
-      console.log('this is my', products);
-
     }
     return products
   }
@@ -114,12 +113,13 @@ class DiscountService {
     limit, page, shopId
   }) => {
     const discounts = await findAllDiscountCodesSelect({
-      limit: +limit, page: +page,
+      limit: +limit,
+      page: +page,
       filter: {
         discount_shopId: convertToObjectId(shopId),
         discount_is_active: true
       },
-      select: ['discount_shopId', 'discount_name'],
+      unSelect: ['discount_code', 'discount_name'],
       model: discountModel
     })
     return discounts
@@ -157,43 +157,50 @@ class DiscountService {
       discount_end_date,
       discount_max_uses,
       discount_min_order_value,
-      discount_users_used
+      discount_users_used,
+      discount_max_uses_per_user,
+      discount_type,
+      discount_value
     } = foundDiscount
-    if (!discount_is_active) throw new NotFoundError('Discount expried')
-    if (!discount_max_uses) throw new NotFoundError('Discount are out')
 
+    console.log('discount=============', discount_is_active);
+    if (!discount_is_active) throw new NotFoundError('Discount expried')
+    // so luong discount duoc su dung
+    if (!discount_max_uses) throw new NotFoundError('Discount are out')
+    // neu thoi giam dung ma nho hon thoi gian bat dau hoac lon hon thoi gian ket thuc tra ve loi
     if (new Date() < new Date(discount_start_date) || new Date() > new Date(discount_end_date)) {
       throw new NotFoundError('Discount ecode has expried')
     }
-    // chech xem co et gia tri toi thieu hay khong
+    // chech xem tong gia tri don co lon hon gia tri toi thieu duoc ap dung hay khong
     let totalOrder = 0
     if (discount_min_order_value > 0) {
-      // get total
+      // tinh tien 1 san pham = soluong * gia
       totalOrder = products.reduce((acc, product) => {
         return acc + (product.quantity * product.price)
       }, 0)
-
+      // neu ma tong gia tri don hang < gia tri toi thieu khong duoc giam gia
       if (totalOrder < discount_min_order_value) {
         throw new NotFoundError(`Discound require as minium order value of ${discount_min_order_value}`)
       }
     }
 
     if (discount_max_uses_per_user > 0) {
-      const userUserDiscount = discount_users_used.find(user => user.userId === userId)
-      if (userUserDiscount) {
-        //..
+      const userUsedDiscount = discount_users_used.find(user => user.userId === userId)
+      if (userUsedDiscount) {
+        throw new NotFoundError('Discount alrealdy user')
       }
     }
-    // check xem discount la fixec_amount
+    // check xem discount la fixec_amount hay persent
     const amount = discount_type === 'fixed_amount' ? discount_value : totalOrder * (discount_value / 100)
-
+    // tra ra tong so tien, so tien giam gia, so tien phai tra
     return {
       totalOrder,
-      amount,
+      discount: amount,
       totalPrice: totalOrder - amount
     }
   }
 
+  // delete discount code
   static async deleteDiscountCode({ shopId, codeId }) {
     const deleted = await discountModel.findOneAndDelete({
       discount_code: codeId,
@@ -203,6 +210,7 @@ class DiscountService {
   }
 
 
+  // cancel discount code
   static async cancelDiscountCode({ codeId, shopId, userId }) {
     const foundDiscount = await checkDiscountExist({
       model: discountModel,
@@ -212,6 +220,7 @@ class DiscountService {
       }
     })
 
+    // khi cancel discount thi giam so luong discount dung xuong 1 va tang so luong ap dung len 1
     if (!foundDiscount) throw new NotFoundError('discount do not exitst')
     const result = await discountModel.findByIdAndUpdate(foundDiscount._id, {
       $pull: {
